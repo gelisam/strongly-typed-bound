@@ -1,8 +1,10 @@
--- A reimplementation of Edward Kmett's strongly-typed bound
--- (http://lpaste.net/79582), except
--- 1) with comments
--- 2) optimized for clarity, not performance 
--- 3) updated for GHC 7.8.3
+-- |
+-- A reimplementation of Edward Kmett's
+-- <http://lpaste.net/79582 strongly-typed bound>, except:
+-- 
+-- 1. with comments
+-- 2. optimized for clarity, not performance
+-- 3. updated for GHC 7.8.3
 
 {-# LANGUAGE GADTs, KindSignatures, InstanceSigs, RankNTypes, ScopedTypeVariables, TypeOperators #-}
 module Main where
@@ -10,7 +12,8 @@ module Main where
 import Control.Applicative
 
 
--- Values of type `Exp Γ τ` represent expressions `e` such that
+-- |
+-- Values of type @Exp Γ τ@ represent expressions 'e' such that
 -- the typing judgement "Γ ⊢ e : τ" holds.
 data Exp (g :: * -> *) a where
     Var :: g a -> Exp g a
@@ -18,11 +21,15 @@ data Exp (g :: * -> *) a where
     App :: Exp g (a -> b) -> Exp g a -> Exp g b
     Lam :: Exp (g `Comma` a) b -> Exp g (a -> b)
 
--- `Comma Γ a` represents the context `Γ` extended with an extra
--- variable of type `a`, typically written "Γ, x:a".
+-- |
+-- @Comma Γ a@ represents the context @Γ@ extended with an extra
+-- variable of type @a@, typically written "Γ, x:a".
 type Comma f a = Either1 f (Const a)
 
 
+-- |
+-- 'Either1' is a version of 'Either' with @->@ replaced with ':->:',
+-- and similarly for the other 'Foo1' constructs.
 type (:->:) f g = forall a. f a -> g a
 
 data Either1 (f :: * -> *) (g :: * -> *) a where
@@ -46,6 +53,7 @@ instance Functor1 Exp where
         s' :: forall a1 b1. (f `Comma` a1) b1 -> (g `Comma` a1) b1
         s' (Left1 fy1)         = Left1 (s fy1)
         s' (Right1 (Const x1)) = Right1 (Const x1)
+
 
 class Monad1 (m :: (* -> *) -> * -> *) where
     -- return1 :: a1 :->: m a1
