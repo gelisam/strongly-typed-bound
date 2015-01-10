@@ -30,8 +30,8 @@ module StronglyTypedBound (
   -- the fact that the constructs takes one extra type argument than usual.
   
   (:->:),
-  Either1,
-  Functor1, Monad1
+  Either1(..),
+  Functor1(..), Monad1(..),
   
   ) where
 
