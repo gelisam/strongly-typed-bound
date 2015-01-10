@@ -56,15 +56,17 @@ type Comma f a = Either1 f (Const a)
 
 type (:->:) f g = forall a. f a -> g a
 
+-- |
+-- > Left1  :: a1 :->: Either1 a1 b1
+-- > Right1 :: b1 :->: Either1 a1 b1
 data Either1 (f :: * -> *) (g :: * -> *) a where
-    -- Left1  :: a1 :->: Either1 a1 b1
-    -- Right1 :: b1 :->: Either1 a1 b1
     Left1  :: f a -> Either1 f g a
     Right1 :: g a -> Either1 f g a
 
 
+-- |
+-- > fmap1 :: (a1 :->: a2) -> (m a1 :-> m a2)
 class Functor1 (m :: (* -> *) -> * -> *) where
-    -- fmap1 :: (a1 :->: a2) -> (m a1 :-> m a2)
     fmap1 :: (forall b. f b -> g b) -> m f a -> m g a
 
 instance Functor1 Exp where
@@ -79,9 +81,10 @@ instance Functor1 Exp where
         s' (Right1 (Const x1)) = Right1 (Const x1)
 
 
+-- |
+-- > return1 :: a1 :->: m a1
+-- > (=<<<) :: (a1 :->: m b1) -> m a1 :->: m b1
 class Monad1 (m :: (* -> *) -> * -> *) where
-    -- return1 :: a1 :->: m a1
-    -- (=<<<) :: (a1 :->: m b1) -> m a1 :->: m b1
     return1 :: g a -> m g a
     (>>>=) :: m f a -> (forall b. f b -> m g b) -> m g a
 
