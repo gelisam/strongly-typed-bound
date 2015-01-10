@@ -25,17 +25,14 @@ module StronglyTypedBound (
   -- * Indexed version of common constructs
   
   -- |
-  -- 'Either1' is a version of 'Either' with @->@ replaced with ':->:',
+  -- 'Functor1' is a version of 'Functor' with @->@ replaced with ':->:',
   -- and similarly for the other indexed constructs. The suffix @1@ represents
-  -- the fact that the constructs takes one extra type argument than usual.
+  -- the fact that the construct takes one more type argument than usual.
   
   (:->:),
-  Either1(..),
   Functor1(..), Monad1(..),
   
   ) where
-
-import Control.Applicative
 
 
 
@@ -51,18 +48,12 @@ data Exp (g :: * -> *) a where
 -- |
 -- @Comma Γ a@ represents the context @Γ@ extended with an extra
 -- variable of type @a@, typically written "Γ, x:a".
-type Comma f a = Either1 f (Const a)
+data Comma g a b where
+    Here  ::   a -> Comma g a a
+    There :: g b -> Comma g a b
 
 
 type (:->:) f g = forall a. f a -> g a
-
--- |
--- > Left1  :: a1 :->: Either1 a1 b1
--- > Right1 :: b1 :->: Either1 a1 b1
-data Either1 (f :: * -> *) (g :: * -> *) a where
-    Left1  :: f a -> Either1 f g a
-    Right1 :: g a -> Either1 f g a
-
 
 -- |
 -- > fmap1 :: (a1 :->: a2) -> (m a1 :->: m a2)
@@ -77,9 +68,8 @@ instance Functor1 Exp where
     fmap1 s (Lam e)     = Lam (fmap1 s' e)
       where
         s' :: forall a1 b1. (f `Comma` a1) b1 -> (g `Comma` a1) b1
-        s' (Left1 fy1)         = Left1 (s fy1)
-        s' (Right1 (Const x1)) = Right1 (Const x1)
-
+        s' (Here x1)   = Here x1
+        s' (There fy1) = There (s fy1)
 
 -- |
 -- > return1 :: a1 :->: m a1
@@ -98,8 +88,8 @@ instance Monad1 Exp where
     Lam e     >>>= s = Lam (e >>>= s')
       where
         s' :: forall a1 b1. (f `Comma` a1) b1 -> Exp (g `Comma` a1) b1
-        s' (Left1 fy1)         = fmap1 Left1 (s fy1)
-        s' (Right1 (Const x1)) = Var (Right1 (Const x1))
+        s' (Here x1)   = Var (Here x1)
+        s' (There fy1) = fmap1 There (s fy1)
 
 
 main :: IO ()
