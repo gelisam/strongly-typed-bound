@@ -65,7 +65,7 @@ data Either1 (f :: * -> *) (g :: * -> *) a where
 
 
 -- |
--- > fmap1 :: (a1 :->: a2) -> (m a1 :-> m a2)
+-- > fmap1 :: (a1 :->: a2) -> (m a1 :->: m a2)
 class Functor1 (m :: (* -> *) -> * -> *) where
     fmap1 :: (forall b. f b -> g b) -> m f a -> m g a
 
