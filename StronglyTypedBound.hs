@@ -7,9 +7,36 @@
 -- 3. updated for GHC 7.8.3
 
 {-# LANGUAGE GADTs, KindSignatures, InstanceSigs, RankNTypes, ScopedTypeVariables, TypeOperators #-}
-module Main where
+module StronglyTypedBound (
+  -- * Strongly-typed Lambda Calculus
+  
+  -- |
+  -- The <http://hackage.haskell.org/package/bound bound> library is used to
+  -- represent languages in a scope-safe way, meaning that terms which attempt
+  -- to use unbounded variables are ill-typed.
+  
+  -- |
+  -- This file is a strongly-typed version of the bound library, meaning that
+  -- variables are not only guaranteed to be well-scoped, but also well-typed.
+  
+  Exp(..),
+  Comma,
+  
+  -- * Indexed version of common constructs
+  
+  -- |
+  -- 'Either1' is a version of 'Either' with @->@ replaced with ':->:',
+  -- and similarly for the other indexed constructs. The suffix @1@ represents
+  -- the fact that the constructs takes one extra type argument than usual.
+  
+  (:->:),
+  Either1,
+  Functor1, Monad1
+  
+  ) where
 
 import Control.Applicative
+
 
 
 -- |
@@ -27,9 +54,6 @@ data Exp (g :: * -> *) a where
 type Comma f a = Either1 f (Const a)
 
 
--- |
--- 'Either1' is a version of 'Either' with @->@ replaced with ':->:',
--- and similarly for the other 'Foo1' constructs.
 type (:->:) f g = forall a. f a -> g a
 
 data Either1 (f :: * -> *) (g :: * -> *) a where
