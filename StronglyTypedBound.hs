@@ -49,7 +49,7 @@ data Exp (g :: * -> *) a where
 -- @Comma Γ a@ represents the context @Γ@ extended with an extra
 -- variable of type @a@, typically written "Γ, x:a".
 data Comma g a b where
-    Here  ::   a -> Comma g a a
+    Here  ::        Comma g a a
     There :: g b -> Comma g a b
 
 
@@ -68,7 +68,7 @@ instance Functor1 Exp where
     fmap1 s (Lam e)     = Lam (fmap1 s' e)
       where
         s' :: forall a1 b1. (f `Comma` a1) b1 -> (g `Comma` a1) b1
-        s' (Here x1)   = Here x1
+        s' Here        = Here
         s' (There fy1) = There (s fy1)
 
 -- |
@@ -88,7 +88,7 @@ instance Monad1 Exp where
     Lam e     >>>= s = Lam (e >>>= s')
       where
         s' :: forall a1 b1. (f `Comma` a1) b1 -> Exp (g `Comma` a1) b1
-        s' (Here x1)   = Var (Here x1)
+        s' Here        = Var Here
         s' (There fy1) = fmap1 There (s fy1)
 
 
