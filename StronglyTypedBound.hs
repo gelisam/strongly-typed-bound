@@ -40,8 +40,7 @@ module StronglyTypedBound (
   -- For convenience, we construct a small DSL for describing terms using HOAS
   -- instead of De Bruijn variables.
   
-  FreshExp,
-  
+  HoasExp,
   var, unit, (<@>), lam,
   bindVar,
   
@@ -133,29 +132,29 @@ instance Eq1 NumericVar where
 -- the expression is built, we don't really need the names to be globally unique.
 -- So we can simply thread the next available 'Int' throughout the expression,
 -- thereby ensuring that the variables are locally unique.
-type FreshExp a = State Int (Exp NumericVar a)
+type HoasExp a = State Int (Exp NumericVar a)
 
 -- |
 -- For internal use by 'lam' only.
-var :: NumericVar a -> FreshExp a
+var :: NumericVar a -> HoasExp a
 var = return . Var
 
 -- |
 -- DSL representation for 'Unit'.
-unit :: FreshExp ()
+unit :: HoasExp ()
 unit = return Unit
 
 -- |
 -- DSL representation for 'App'.
 infixl 4 <@>
-(<@>) :: FreshExp (a -> b) -> FreshExp a -> FreshExp b
+(<@>) :: HoasExp (a -> b) -> HoasExp a -> HoasExp b
 (<@>) = liftA2 App
 
 -- |
 -- DSL representation for 'Lam'. The DSL exists to provide this more convenient
 -- HOAS-style syntax.
 lam :: Typeable a
-    => (FreshExp a -> FreshExp b) -> FreshExp (a -> b)
+    => (HoasExp a -> HoasExp b) -> HoasExp (a -> b)
 lam body = do
     n <- get
     modify (+1)
