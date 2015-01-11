@@ -32,8 +32,16 @@ module StronglyTypedBound (
   (:->:),
   Functor1(..), Monad1(..),
   
+  -- * Heterogeneous equality
+  
+  -- |
+  -- If two variables are the same, then they also have equal types.
+  -- We need a notion of equality which reflects this.
+  
+  Eq1(..), eqProxy
   ) where
 
+import Data.Typeable
 
 
 -- |
@@ -90,6 +98,21 @@ instance Monad1 Exp where
         s' :: forall a1 b1. (f `Comma` a1) b1 -> Exp (g `Comma` a1) b1
         s' Here        = Var Here
         s' (There fy1) = fmap1 There (s fy1)
+
+
+class Eq1 (f :: * -> *) where
+    (==?) :: f a -> f a' -> Maybe (a :~: a')
+
+eqProxy :: (Typeable a, Typeable a')
+        => Proxy a -> Proxy a' -> Maybe (a :~: a')
+eqProxy _ _ = eqT
+
+instance (Eq1 g, Eq a) => Eq1 (Comma g a) where
+    Here ==? Here = Just Refl
+    There gy ==? There gy' = case gy ==? gy' of
+        Just Refl -> Just Refl
+        Nothing   -> Nothing
+    _ ==? _ = Nothing
 
 
 main :: IO ()
