@@ -50,9 +50,17 @@ module StronglyTypedBound (
   
   -- * Infinite contexts
   
-  NumericVar(..)
+  NumericVar(..),
+  
+  -- * Locally-unique variable names
+  FreshExp,
+  
+  var, unit, (<@>), lam,
+  bindVar
   ) where
 
+import Control.Applicative
+import Control.Monad.State
 import Data.Typeable
 import GHC.Conc.Sync (pseq)
 
@@ -67,7 +75,6 @@ data Exp (g :: * -> *) a where
     Unit :: Exp g ()
     App :: Exp g (a -> b) -> Exp g a -> Exp g b
     Lam :: Exp (g `Comma` a) b -> Exp g (a -> b)
-
 
 
 -- * Finite contexts
@@ -173,3 +180,50 @@ instance Eq1 NumericVar where
     NumericVar n p ==? NumericVar n' p' = case (n == n', p `eqProxy` p') of
         (True, Just Refl) -> Just Refl
         _                 -> Nothing
+
+
+-- * Locally-unique variable names
+
+-- |
+-- A pure alternative to open type witnesses.
+-- 
+-- In the original strongly-typed bound implementation, Edward Kmett uses
+-- @'unsafePerformIO' 'newUnique'@ to generate new variable names and
+-- @unsafeCoerce@ to generate the @a :~: b@ proofs.
+-- 
+-- Since the variables will be converted to De Bruijn indices immediately after
+-- the expression is built, we don't really need the names to be globally unique.
+-- So we can simply thread the next available 'Int' throughout the expression,
+-- thereby ensuring that the variables are locally unique.
+type FreshExp a = State Int (Exp NumericVar a)
+
+var :: NumericVar a -> FreshExp a
+var = return . Var
+
+unit :: FreshExp ()
+unit = return Unit
+
+infixl 4 <@>
+(<@>) :: FreshExp (a -> b) -> FreshExp a -> FreshExp b
+(<@>) = liftA2 App
+
+lam :: Typeable a
+    => (FreshExp a -> FreshExp b) -> FreshExp (a -> b)
+lam body = do
+    n <- get
+    modify (+1)
+    let numericVar = NumericVar n Proxy
+    e <- body (var numericVar)
+    return $ Lam (bindVar numericVar e)
+
+-- |
+-- @'bindVar' v e@ shadows 'v', replacing its occurences in 'e' with a fresh
+-- bound variable.
+bindVar :: forall g a b. Eq1 g
+     => g a -> Exp g b -> Exp (g `Comma` a) b
+bindVar gx = fmap1 s
+  where
+    s :: g c -> (g `Comma` a) c
+    s gz = case gz ==? gx of
+        Just Refl -> Here
+        Nothing   -> There gz
