@@ -20,7 +20,7 @@ module StronglyTypedBound (
   -- variables are not only guaranteed to be well-scoped, but also well-typed.
   
   Exp(..),
-  Comma,
+  Comma(..),
   Empty1, absurd1,
   
   -- * Indexed version of common constructs
