@@ -100,6 +100,9 @@ instance Monad1 Exp where
         s' (There fy1) = fmap1 There (s fy1)
 
 
+-- |
+-- Note that even if 'a' and 'a'' are the same type, '==?' may still
+-- return 'Nothing' if the values are unequal.
 class Eq1 (f :: * -> *) where
     (==?) :: f a -> f a' -> Maybe (a :~: a')
 
