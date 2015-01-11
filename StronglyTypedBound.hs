@@ -53,7 +53,7 @@ module StronglyTypedBound (
   -- the fact that the construct takes one more type argument than usual.
   
   (:->:),
-  Functor1(..), Monad1(..),
+  Functor1(..), Monad1(..), Show1(..),
   
   -- * Heterogeneous equality
   
