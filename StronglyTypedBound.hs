@@ -20,6 +20,13 @@ module StronglyTypedBound (
   -- variables are not only guaranteed to be well-scoped, but also well-typed.
   
   Exp(..),
+  
+  -- * Context
+  
+  -- |
+  -- In the typing judgement "Γ ⊢ e : τ", the "Γ" on the left of the turnstile
+  -- is a "context", describing which variables are in scope.
+  
   Comma(..),
   Empty1, absurd1,
   
