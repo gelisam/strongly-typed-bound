@@ -11,4 +11,6 @@ library
   exposed-modules:     StronglyTypedBound
   other-extensions:    GADTs, KindSignatures, InstanceSigs, RankNTypes, ScopedTypeVariables, TypeOperators
   build-depends:       base >=4.7 && <4.8
+                     , mtl
   default-language:    Haskell2010
+  ghc-options:         -W -Wall
