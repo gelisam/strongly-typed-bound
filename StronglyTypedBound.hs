@@ -46,7 +46,11 @@ module StronglyTypedBound (
   -- If two variables are the same, then they also have equal types.
   -- We need a notion of equality which reflects this.
   
-  Eq1(..), eqProxy
+  Eq1(..), eqProxy,
+  
+  -- * Infinite contexts
+  
+  NumericVar(..)
   ) where
 
 import GHC.Conc.Sync (pseq)
@@ -150,6 +154,25 @@ instance (Eq1 g, Eq a) => Eq1 (Comma g a) where
         Just Refl -> Just Refl
         Nothing   -> Nothing
     _ ==? _ = Nothing
+
+
+-- * Infinite contexts
+
+-- |
+-- Unlike a fixed context such as @'Empty1' \`Comma\` 'Unit' \`Comma\` ('Unit' -> 'Unit')@,
+-- which contains only one variable of type 'Unit' and one variable of type
+-- @'Unit' -> 'Unit'@, the context 'NumericVar' contains infinitely-many
+-- variables of every type.
+-- 
+-- This allows fresh variables to be generated without changing the context,
+-- which in turn allows existing variables to be used without prefixing them with 'There'.
+data NumericVar a where
+    NumericVar :: Typeable a => Int -> Proxy a -> NumericVar a
+
+instance Eq1 NumericVar where
+    NumericVar n p ==? NumericVar n' p' = case (n == n', p `eqProxy` p') of
+        (True, Just Refl) -> Just Refl
+        _                 -> Nothing
 
 
 main :: IO ()
