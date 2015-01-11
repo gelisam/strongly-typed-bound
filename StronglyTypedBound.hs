@@ -21,6 +21,7 @@ module StronglyTypedBound (
   
   Exp(..),
   Comma,
+  Empty1, absurd1,
   
   -- * Indexed version of common constructs
   
@@ -41,6 +42,7 @@ module StronglyTypedBound (
   Eq1(..), eqProxy
   ) where
 
+import GHC.Conc.Sync (pseq)
 import Data.Typeable
 
 
@@ -59,6 +61,16 @@ data Exp (g :: * -> *) a where
 data Comma g a b where
     Here  ::        Comma g a a
     There :: g b -> Comma g a b
+
+-- |
+-- 'Empty1' represents the empty context, with no variables.
+data Empty1 a
+
+-- |
+-- @'absurd1' empty1@ forces the evaluation of 'empty1', which can only be ⊥.
+absurd1 :: Empty1 a -> b
+absurd1 empty1 = empty1 `pseq` error "never happens"
+
 
 
 type (:->:) f g = forall a. f a -> g a
@@ -112,6 +124,9 @@ class Eq1 (f :: * -> *) where
 eqProxy :: (Typeable a, Typeable a')
         => Proxy a -> Proxy a' -> Maybe (a :~: a')
 eqProxy _ _ = eqT
+
+instance Eq1 Empty1 where
+    empty1 ==? _ = absurd1 empty1
 
 instance (Eq1 g, Eq a) => Eq1 (Comma g a) where
     Here ==? Here = Just Refl
