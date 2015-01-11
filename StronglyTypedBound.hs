@@ -35,6 +35,11 @@ module StronglyTypedBound (
   NumericVar(..),
   
   -- * Locally-unique variable names
+  
+  -- |
+  -- For convenience, we construct a small DSL for describing terms using HOAS
+  -- instead of De Bruijn variables.
+  
   FreshExp,
   
   var, unit, (<@>), lam,
@@ -130,16 +135,25 @@ instance Eq1 NumericVar where
 -- thereby ensuring that the variables are locally unique.
 type FreshExp a = State Int (Exp NumericVar a)
 
+-- |
+-- For internal use by 'lam' only.
 var :: NumericVar a -> FreshExp a
 var = return . Var
 
+-- |
+-- DSL representation for 'Unit'.
 unit :: FreshExp ()
 unit = return Unit
 
+-- |
+-- DSL representation for 'App'.
 infixl 4 <@>
 (<@>) :: FreshExp (a -> b) -> FreshExp a -> FreshExp b
 (<@>) = liftA2 App
 
+-- |
+-- DSL representation for 'Lam'. The DSL exists to provide this more convenient
+-- HOAS-style syntax.
 lam :: Typeable a
     => (FreshExp a -> FreshExp b) -> FreshExp (a -> b)
 lam body = do
