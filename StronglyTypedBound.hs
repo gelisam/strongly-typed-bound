@@ -20,6 +20,7 @@ module StronglyTypedBound (
   -- variables are not only guaranteed to be well-scoped, but also well-typed.
   
   Exp(..),
+  eval,
   
   -- * Finite contexts
   
@@ -80,6 +81,25 @@ data Exp (g :: * -> *) a where
     Unit :: Exp g ()
     App :: Exp g (a -> b) -> Exp g a -> Exp g b
     Lam :: Exp (g `Comma` a) b -> Exp g (a -> b)
+
+-- |
+-- >>> :{
+--   eval $ runHoasExp $ lam (\f -> f <@> unit)
+--                   <@> lam (\x -> x)
+-- :}
+-- ()
+eval :: Exp Empty1 a -> a
+eval = go absurd1
+  where
+    go :: forall g a. (forall b. g b -> b) -> Exp g a -> a
+    go env (Var gx)    = env gx
+    go _   Unit        = ()
+    go env (App e1 e2) = (go env e1) (go env e2)
+    go env (Lam e)     = \x1 -> go (env' x1) e
+      where
+        env' :: forall a1. a1 -> (forall b. Comma g a1 b -> b)
+        env' x1 Here       = x1
+        env' _  (There gy) = env gy
 
 
 -- * Finite contexts
@@ -243,6 +263,9 @@ instance Show1 g => Show1 (Exp g) where
     show1 Unit        = "Unit"
     show1 (App e1 e2) = printf "(%s) `App` (%s)" (show1 e1) (show1 e2)
     show1 (Lam e)     = printf "Lam (%s)" (show1 e)
+
+instance Show1 g => Show (Exp g a) where
+    show = show1
 
 
 -- * Heterogeneous equality
