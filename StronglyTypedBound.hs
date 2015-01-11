@@ -33,6 +33,7 @@ module StronglyTypedBound (
   -- * Infinite contexts
   
   NumericVar(..),
+  bindVar,
   
   -- * Locally-unique variable names
   
@@ -42,7 +43,6 @@ module StronglyTypedBound (
   
   HoasExp,
   var, unit, (<@>), lam,
-  bindVar,
   
   -- * Indexed version of common constructs
   
@@ -118,6 +118,18 @@ instance Eq1 NumericVar where
         (True, Just Refl) -> Just Refl
         _                 -> Nothing
 
+-- |
+-- @'bindVar' v e@ shadows 'v', replacing its occurences in 'e' with a fresh
+-- bound variable.
+bindVar :: forall g a b. Eq1 g
+     => g a -> Exp g b -> Exp (g `Comma` a) b
+bindVar gx = fmap1 s
+  where
+    s :: g c -> (g `Comma` a) c
+    s gz = case gz ==? gx of
+        Just Refl -> Here
+        Nothing   -> There gz
+
 
 -- * Locally-unique variable names
 
@@ -161,18 +173,6 @@ lam body = do
     let numericVar = NumericVar n Proxy
     e <- body (var numericVar)
     return $ Lam (bindVar numericVar e)
-
--- |
--- @'bindVar' v e@ shadows 'v', replacing its occurences in 'e' with a fresh
--- bound variable.
-bindVar :: forall g a b. Eq1 g
-     => g a -> Exp g b -> Exp (g `Comma` a) b
-bindVar gx = fmap1 s
-  where
-    s :: g c -> (g `Comma` a) c
-    s gz = case gz ==? gx of
-        Just Refl -> Here
-        Nothing   -> There gz
 
 
 -- * Indexed version of common constructs
