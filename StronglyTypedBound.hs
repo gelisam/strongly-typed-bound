@@ -53,6 +53,8 @@ import GHC.Conc.Sync (pseq)
 import Data.Typeable
 
 
+-- * Strongly-typed Lambda Calculus
+
 -- |
 -- Values of type @Exp Γ τ@ represent expressions 'e' such that
 -- the typing judgement "Γ ⊢ e : τ" holds.
@@ -61,6 +63,10 @@ data Exp (g :: * -> *) a where
     Unit :: Exp g ()
     App :: Exp g (a -> b) -> Exp g a -> Exp g b
     Lam :: Exp (g `Comma` a) b -> Exp g (a -> b)
+
+
+
+-- * Finite contexts
 
 -- |
 -- @Comma Γ a@ represents the context @Γ@ extended with an extra
@@ -79,6 +85,7 @@ absurd1 :: Empty1 a -> b
 absurd1 empty1 = empty1 `pseq` error "never happens"
 
 
+-- * Indexed version of common constructs
 
 type (:->:) f g = forall a. f a -> g a
 
@@ -118,6 +125,8 @@ instance Monad1 Exp where
         s' Here        = Var Here
         s' (There fy1) = fmap1 There (s fy1)
 
+
+-- * Heterogeneous equality
 
 -- |
 -- Note that even if 'a' and 'a'' are the same type, '==?' may still
