@@ -41,7 +41,7 @@ module StronglyTypedBound (
   -- For convenience, we construct a small DSL for describing terms using HOAS
   -- instead of De Bruijn variables.
   
-  HoasExp,
+  HoasExp, runHoasExp,
   var, unit, (<@>), lam,
   
   -- * Indexed version of common constructs
@@ -145,6 +145,15 @@ bindVar gx = fmap1 s
 -- So we can simply thread the next available 'Int' throughout the expression,
 -- thereby ensuring that the variables are locally unique.
 type HoasExp a = State Int (Exp NumericVar a)
+
+-- |
+-- Fails if 'var' was used to create variables which haven't been bound by 'lam'.
+runHoasExp :: HoasExp a -> Exp Empty1 a
+runHoasExp = fmap1 s . flip evalState 0
+  where
+    s :: NumericVar a -> Empty1 a
+    s _ = error "unbound variable, var must have been used improperly."
+
 
 -- |
 -- For internal use by 'lam' only.
