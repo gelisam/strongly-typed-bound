@@ -30,6 +30,16 @@ module StronglyTypedBound (
   Comma(..),
   Empty1, absurd1,
   
+  -- * Infinite contexts
+  
+  NumericVar(..),
+  
+  -- * Locally-unique variable names
+  FreshExp,
+  
+  var, unit, (<@>), lam,
+  bindVar,
+  
   -- * Indexed version of common constructs
   
   -- |
@@ -46,17 +56,7 @@ module StronglyTypedBound (
   -- If two variables are the same, then they also have equal types.
   -- We need a notion of equality which reflects this.
   
-  Eq1(..), eqProxy,
-  
-  -- * Infinite contexts
-  
-  NumericVar(..),
-  
-  -- * Locally-unique variable names
-  FreshExp,
-  
-  var, unit, (<@>), lam,
-  bindVar
+  Eq1(..), eqProxy
   ) where
 
 import Control.Applicative
@@ -94,6 +94,72 @@ data Empty1 a
 -- @'absurd1' empty1@ forces the evaluation of 'empty1', which can only be ⊥.
 absurd1 :: Empty1 a -> b
 absurd1 empty1 = empty1 `pseq` error "never happens"
+
+
+-- * Infinite contexts
+
+-- |
+-- Unlike a fixed context such as @'Empty1' \`Comma\` 'Unit' \`Comma\` ('Unit' -> 'Unit')@,
+-- which contains only one variable of type 'Unit' and one variable of type
+-- @'Unit' -> 'Unit'@, the context 'NumericVar' contains infinitely-many
+-- variables of every type.
+-- 
+-- This allows fresh variables to be generated without changing the context,
+-- which in turn allows existing variables to be used without prefixing them with 'There'.
+data NumericVar a where
+    NumericVar :: Typeable a => Int -> Proxy a -> NumericVar a
+
+instance Eq1 NumericVar where
+    NumericVar n p ==? NumericVar n' p' = case (n == n', p `eqProxy` p') of
+        (True, Just Refl) -> Just Refl
+        _                 -> Nothing
+
+
+-- * Locally-unique variable names
+
+-- |
+-- A pure alternative to open type witnesses.
+-- 
+-- In the original strongly-typed bound implementation, Edward Kmett uses
+-- @'unsafePerformIO' 'newUnique'@ to generate new variable names and
+-- @unsafeCoerce@ to generate the @a :~: b@ proofs.
+-- 
+-- Since the variables will be converted to De Bruijn indices immediately after
+-- the expression is built, we don't really need the names to be globally unique.
+-- So we can simply thread the next available 'Int' throughout the expression,
+-- thereby ensuring that the variables are locally unique.
+type FreshExp a = State Int (Exp NumericVar a)
+
+var :: NumericVar a -> FreshExp a
+var = return . Var
+
+unit :: FreshExp ()
+unit = return Unit
+
+infixl 4 <@>
+(<@>) :: FreshExp (a -> b) -> FreshExp a -> FreshExp b
+(<@>) = liftA2 App
+
+lam :: Typeable a
+    => (FreshExp a -> FreshExp b) -> FreshExp (a -> b)
+lam body = do
+    n <- get
+    modify (+1)
+    let numericVar = NumericVar n Proxy
+    e <- body (var numericVar)
+    return $ Lam (bindVar numericVar e)
+
+-- |
+-- @'bindVar' v e@ shadows 'v', replacing its occurences in 'e' with a fresh
+-- bound variable.
+bindVar :: forall g a b. Eq1 g
+     => g a -> Exp g b -> Exp (g `Comma` a) b
+bindVar gx = fmap1 s
+  where
+    s :: g c -> (g `Comma` a) c
+    s gz = case gz ==? gx of
+        Just Refl -> Here
+        Nothing   -> There gz
 
 
 -- * Indexed version of common constructs
@@ -161,69 +227,3 @@ instance (Eq1 g, Eq a) => Eq1 (Comma g a) where
         Just Refl -> Just Refl
         Nothing   -> Nothing
     _ ==? _ = Nothing
-
-
--- * Infinite contexts
-
--- |
--- Unlike a fixed context such as @'Empty1' \`Comma\` 'Unit' \`Comma\` ('Unit' -> 'Unit')@,
--- which contains only one variable of type 'Unit' and one variable of type
--- @'Unit' -> 'Unit'@, the context 'NumericVar' contains infinitely-many
--- variables of every type.
--- 
--- This allows fresh variables to be generated without changing the context,
--- which in turn allows existing variables to be used without prefixing them with 'There'.
-data NumericVar a where
-    NumericVar :: Typeable a => Int -> Proxy a -> NumericVar a
-
-instance Eq1 NumericVar where
-    NumericVar n p ==? NumericVar n' p' = case (n == n', p `eqProxy` p') of
-        (True, Just Refl) -> Just Refl
-        _                 -> Nothing
-
-
--- * Locally-unique variable names
-
--- |
--- A pure alternative to open type witnesses.
--- 
--- In the original strongly-typed bound implementation, Edward Kmett uses
--- @'unsafePerformIO' 'newUnique'@ to generate new variable names and
--- @unsafeCoerce@ to generate the @a :~: b@ proofs.
--- 
--- Since the variables will be converted to De Bruijn indices immediately after
--- the expression is built, we don't really need the names to be globally unique.
--- So we can simply thread the next available 'Int' throughout the expression,
--- thereby ensuring that the variables are locally unique.
-type FreshExp a = State Int (Exp NumericVar a)
-
-var :: NumericVar a -> FreshExp a
-var = return . Var
-
-unit :: FreshExp ()
-unit = return Unit
-
-infixl 4 <@>
-(<@>) :: FreshExp (a -> b) -> FreshExp a -> FreshExp b
-(<@>) = liftA2 App
-
-lam :: Typeable a
-    => (FreshExp a -> FreshExp b) -> FreshExp (a -> b)
-lam body = do
-    n <- get
-    modify (+1)
-    let numericVar = NumericVar n Proxy
-    e <- body (var numericVar)
-    return $ Lam (bindVar numericVar e)
-
--- |
--- @'bindVar' v e@ shadows 'v', replacing its occurences in 'e' with a fresh
--- bound variable.
-bindVar :: forall g a b. Eq1 g
-     => g a -> Exp g b -> Exp (g `Comma` a) b
-bindVar gx = fmap1 s
-  where
-    s :: g c -> (g `Comma` a) c
-    s gz = case gz ==? gx of
-        Just Refl -> Here
-        Nothing   -> There gz
