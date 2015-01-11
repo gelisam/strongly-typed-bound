@@ -53,8 +53,8 @@ module StronglyTypedBound (
   NumericVar(..)
   ) where
 
-import GHC.Conc.Sync (pseq)
 import Data.Typeable
+import GHC.Conc.Sync (pseq)
 
 
 -- * Strongly-typed Lambda Calculus
