@@ -173,7 +173,3 @@ instance Eq1 NumericVar where
     NumericVar n p ==? NumericVar n' p' = case (n == n', p `eqProxy` p') of
         (True, Just Refl) -> Just Refl
         _                 -> Nothing
-
-
-main :: IO ()
-main = putStrLn "typechecks."
