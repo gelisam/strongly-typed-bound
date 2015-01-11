@@ -35,7 +35,7 @@ module StronglyTypedBound (
   NumericVar(..),
   bindVar,
   
-  -- * Locally-unique variable names
+  -- * HOAS syntax for lambdas
   
   -- |
   -- For convenience, we construct a small DSL for describing terms using HOAS
