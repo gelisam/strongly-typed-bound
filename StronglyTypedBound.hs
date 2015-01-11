@@ -67,6 +67,7 @@ import Control.Applicative
 import Control.Monad.State
 import Data.Typeable
 import GHC.Conc.Sync (pseq)
+import Text.Printf
 
 
 -- * Strongly-typed Lambda Calculus
@@ -223,6 +224,25 @@ instance Monad1 Exp where
         s' :: forall a1 b1. (f `Comma` a1) b1 -> Exp (g `Comma` a1) b1
         s' Here        = Var Here
         s' (There fy1) = fmap1 There (s fy1)
+
+class Show1 (f :: * -> *) where
+    show1 :: f a -> String
+
+instance Show1 Empty1 where
+    show1 = absurd1
+
+instance Show1 g => Show1 (Comma g a) where
+    show1 Here       = "Here"
+    show1 (There gx) = printf "There (%s)" (show1 gx)
+
+instance Show1 NumericVar where
+    show1 (NumericVar n Proxy) = show n
+
+instance Show1 g => Show1 (Exp g) where
+    show1 (Var gx)    = show1 gx
+    show1 Unit        = "Unit"
+    show1 (App e1 e2) = printf "(%s) `App` (%s)" (show1 e1) (show1 e2)
+    show1 (Lam e)     = printf "Lam (%s)" (show1 e)
 
 
 -- * Heterogeneous equality
