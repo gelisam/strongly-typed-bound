@@ -103,6 +103,9 @@ instance Monad1 Exp where
 class Eq1 (f :: * -> *) where
     (==?) :: f a -> f a' -> Maybe (a :~: a')
 
+-- |
+-- Due to the 'Typeable' constraints, this isn't quite the right type
+-- for an @'Eq1' 'Proxy'@ instance.
 eqProxy :: (Typeable a, Typeable a')
         => Proxy a -> Proxy a' -> Maybe (a :~: a')
 eqProxy _ _ = eqT
