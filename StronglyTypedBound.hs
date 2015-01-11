@@ -21,7 +21,7 @@ module StronglyTypedBound (
   
   Exp(..),
   
-  -- * Context
+  -- * Finite contexts
   
   -- |
   -- In the typing judgement "Γ ⊢ e : τ", the "Γ" on the left of the turnstile
