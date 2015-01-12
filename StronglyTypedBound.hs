@@ -96,14 +96,14 @@ data Exp (g :: * -> *) a where
 mapContext :: forall g a g'
             . (forall b. g b -> g' b)
            -> Exp g a -> Exp g' a
-mapContext s (Var fx)    = Var (s fx)
+mapContext s (Var gx)    = Var (s gx)
 mapContext _ Unit        = Unit
 mapContext s (App e1 e2) = App (mapContext s e1) (mapContext s e2)
 mapContext s (Lam e)     = Lam (mapContext s' e)
   where
     s' :: forall a1 b1. (g `Comma` a1) b1 -> (g' `Comma` a1) b1
     s' Here        = Here
-    s' (There fy1) = There (s fy1)
+    s' (There gy1) = There (s gy1)
 
 
 -- * AST manipulations
@@ -287,8 +287,8 @@ lam body = do
 -- |
 -- Note that even if 'a' and 'a'' are the same type, '==?' may still
 -- return 'Nothing' if the values are unequal.
-class Eq1 (f :: * -> *) where
-    (==?) :: f a -> f a' -> Maybe (a :~: a')
+class Eq1 (g :: * -> *) where
+    (==?) :: g a -> g a' -> Maybe (a :~: a')
 
 -- |
 -- Due to the 'Typeable' constraints, this isn't quite the right type
