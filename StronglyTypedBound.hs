@@ -28,6 +28,7 @@ module StronglyTypedBound (
   -- construct takes one more type argument than usual.
   
   Exp(..),
+  mapContext,
   
   -- * AST manipulations
   
@@ -69,16 +70,7 @@ module StronglyTypedBound (
   -- If two variables are the same, then they also have equal types.
   -- We need a notion of equality which reflects this.
   
-  Eq1(..), eqProxy,
-  
-  -- * Indexed version of common constructs
-  
-  -- |
-  -- 'Functor1' is a version of 'Functor' with @->@ replaced with ':->:',
-  -- and similarly for the other indexed constructs.
-  
-  (:->:),
-  Functor1(..)
+  Eq1(..), eqProxy
   ) where
 
 import Control.Applicative (liftA2)
@@ -98,6 +90,20 @@ data Exp (g :: * -> *) a where
     Unit :: Exp g ()
     App :: Exp g (a -> b) -> Exp g a -> Exp g b
     Lam :: Exp (g `Comma` a) b -> Exp g (a -> b)
+
+-- |
+-- Change the context by changing all the variables.
+mapContext :: forall g a g'
+            . (forall b. g b -> g' b)
+           -> Exp g a -> Exp g' a
+mapContext s (Var fx)    = Var (s fx)
+mapContext _ Unit        = Unit
+mapContext s (App e1 e2) = App (mapContext s e1) (mapContext s e2)
+mapContext s (Lam e)     = Lam (mapContext s' e)
+  where
+    s' :: forall a1 b1. (g `Comma` a1) b1 -> (g' `Comma` a1) b1
+    s' Here        = Here
+    s' (There fy1) = There (s fy1)
 
 
 -- * AST manipulations
@@ -215,7 +221,7 @@ instance Eq1 NumericVar where
 -- bound variable.
 bindVar :: forall g a b. Eq1 g
      => g a -> Exp g b -> Exp (g `Comma` a) b
-bindVar gx = fmap1 s
+bindVar gx = mapContext s
   where
     s :: g c -> (g `Comma` a) c
     s gz = case gz ==? gx of
@@ -241,7 +247,7 @@ type HoasExp a = State Int (Exp NumericVar a)
 -- |
 -- Fails if 'var' was used to create variables which haven't been bound by 'lam'.
 runHoasExp :: HoasExp a -> Exp Empty1 a
-runHoasExp = fmap1 s . flip evalState 0
+runHoasExp = mapContext s . flip evalState 0
   where
     s :: NumericVar a -> Empty1 a
     s _ = error "unbound variable, var must have been used improperly."
@@ -300,27 +306,3 @@ instance Eq1 g => Eq1 (Comma g a) where
         Just Refl -> Just Refl
         Nothing   -> Nothing
     _ ==? _ = Nothing
-
-
--- * Indexed version of common constructs
-
--- |
--- The original calls this 'Nat', because if 'f' and 'g' are functors, then
--- @f ':->:' g@ is a natural transformation from 'f' to 'g'.
-type (:->:) f g = forall a. f a -> g a
-
--- |
--- > fmap1 :: (a1 :->: a2) -> (m a1 :->: m a2)
-class Functor1 (m :: (* -> *) -> * -> *) where
-    fmap1 :: (forall b. f b -> g b) -> m f a -> m g a
-
-instance Functor1 Exp where
-    fmap1 :: forall f a g. (forall b. f b -> g b) -> Exp f a -> Exp g a
-    fmap1 s (Var fx)    = Var (s fx)
-    fmap1 _ Unit        = Unit
-    fmap1 s (App e1 e2) = App (fmap1 s e1) (fmap1 s e2)
-    fmap1 s (Lam e)     = Lam (fmap1 s' e)
-      where
-        s' :: forall a1 b1. (f `Comma` a1) b1 -> (g `Comma` a1) b1
-        s' Here        = Here
-        s' (There fy1) = There (s fy1)
