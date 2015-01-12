@@ -31,4 +31,4 @@ data Exp g where
     Lam :: Exp (Maybe g) -> Exp g
 ```
 
-This representation ensures that our terms are well-scoped, but we have lost the guarantee that terms are well-typed. [StronglyTypedBound.hs](StronglyTypedBound.hs) demonstrates how this representation can be extended to get the best of both worlds: a concrete representation for variables, and terms which are both well-scoped and well-typed.
+This representation ensures that our terms are well-scoped, but we have lost the guarantee that terms are well-typed. [StronglyTypedBound.hs](http://gelisam.com/files/strongly-typed-bound/StronglyTypedBound.html) demonstrates how this representation can be extended to get the best of both worlds: a concrete representation for variables, and terms which are both well-scoped and well-typed.
