@@ -286,7 +286,7 @@ eqProxy _ _ = eqT
 instance Eq1 Empty1 where
     empty1 ==? _ = absurd1 empty1
 
-instance (Eq1 g, Eq a) => Eq1 (Comma g a) where
+instance Eq1 g => Eq1 (Comma g a) where
     Here ==? Here = Just Refl
     There gy ==? There gy' = case gy ==? gy' of
         Just Refl -> Just Refl
