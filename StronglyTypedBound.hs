@@ -220,7 +220,7 @@ instance Eq1 NumericVar where
 -- @'bindVar' v e@ shadows 'v', replacing its occurences in 'e' with a fresh
 -- bound variable.
 bindVar :: forall g a b. Eq1 g
-     => g a -> Exp g b -> Exp (g `Comma` a) b
+        => g a -> Exp g b -> Exp (g `Comma` a) b
 bindVar gx = mapContext s
   where
     s :: g c -> (g `Comma` a) c
