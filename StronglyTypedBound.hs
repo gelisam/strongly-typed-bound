@@ -299,6 +299,9 @@ instance Eq1 g => Eq1 (Comma g a) where
 
 -- * Indexed version of common constructs
 
+-- |
+-- The original calls this 'Nat', because if 'f' and 'g' are functors, then
+-- @f ':->:' g@ is a natural transformation from 'f' to 'g'.
 type (:->:) f g = forall a. f a -> g a
 
 -- |
@@ -318,6 +321,10 @@ instance Functor1 Exp where
         s' (There fy1) = There (s fy1)
 
 -- |
+-- Our examples didn't require substitution, but if they did, we'd be using
+-- monadic substitution. The @a1 :->: m b1@ argument is a map from variable
+-- to value.
+-- 
 -- > return1 :: a1 :->: m a1
 -- > (=<<<) :: (a1 :->: m b1) -> m a1 :->: m b1
 class Monad1 (m :: (* -> *) -> * -> *) where
