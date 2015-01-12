@@ -72,7 +72,7 @@ module StronglyTypedBound (
   -- the fact that the construct takes one more type argument than usual.
   
   (:->:),
-  Functor1(..), Monad1(..), Show1(..)
+  Functor1(..)
   ) where
 
 import Control.Applicative (liftA2)
@@ -80,7 +80,6 @@ import Control.Monad.State
 import Data.Maybe
 import Data.Typeable
 import GHC.Conc.Sync (pseq)
-import Text.Printf
 
 
 -- * Simply-typed Lambda Calculus
@@ -319,51 +318,3 @@ instance Functor1 Exp where
         s' :: forall a1 b1. (f `Comma` a1) b1 -> (g `Comma` a1) b1
         s' Here        = Here
         s' (There fy1) = There (s fy1)
-
--- |
--- Our examples didn't require substitution, but if they did, we'd be using
--- monadic substitution. The @a1 :->: m b1@ argument is a map from variable
--- to value.
--- 
--- > return1 :: a1 :->: m a1
--- > (=<<<) :: (a1 :->: m b1) -> m a1 :->: m b1
-class Monad1 (m :: (* -> *) -> * -> *) where
-    return1 :: g a -> m g a
-    (>>>=) :: m f a -> (forall b. f b -> m g b) -> m g a
-
-instance Monad1 Exp where
-    return1 = Var
-    
-    (>>>=) :: forall f a g. Exp f a -> (forall b. f b -> Exp g b) -> Exp g a
-    Var fx    >>>= s = s fx
-    Unit      >>>= _ = Unit
-    App e1 e2 >>>= s = App (e1 >>>= s) (e2 >>>= s)
-    Lam e     >>>= s = Lam (e >>>= s')
-      where
-        s' :: forall a1 b1. (f `Comma` a1) b1 -> Exp (g `Comma` a1) b1
-        s' Here        = Var Here
-        s' (There fy1) = fmap1 There (s fy1)
-
-class Show1 (f :: * -> *) where
-    show1 :: f a -> String
-
-instance Show1 Empty1 where
-    show1 = absurd1
-
-instance Show1 g => Show1 (Comma g a) where
-    show1 Here       = "Here"
-    show1 (There gx) = printf "There (%s)" (show1 gx)
-
-instance Show1 NumericVar where
-    show1 (NumericVar n Proxy) = show n
-
-instance Show1 g => Show1 (Exp g) where
-    show1 (Var gx)    = show1 gx
-    show1 Unit        = "Unit"
-    show1 (App e1 e2) = printf "(%s) `App` (%s)" (show1 e1) (show1 e2)
-    show1 (Lam e)     = printf "Lam (%s)" (show1 e)
-
-instance Show1 g => Show (Exp g a) where
-    show = show1
-
-
