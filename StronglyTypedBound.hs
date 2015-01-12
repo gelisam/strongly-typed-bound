@@ -115,6 +115,18 @@ eval = go absurd1
 -- |
 -- ...but some operations are much easier using a representation which, like 'Exp',
 -- use concrete representations for variables.
+-- 
+-- >>> :{
+--   hasUnusedBoundVars $ runHoasExp $ lam (\f -> f <@> unit)
+--                                 <@> lam (\x -> x)
+-- :}
+-- False
+-- 
+-- >>> :{
+--   hasUnusedBoundVars $ runHoasExp $ lam (\f -> f <@> unit)
+--                                 <@> lam (\x -> unit)
+-- :}
+-- True
 hasUnusedBoundVars :: Exp Empty1 a -> Bool
 hasUnusedBoundVars = isNothing . go
   where
