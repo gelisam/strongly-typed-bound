@@ -23,6 +23,10 @@ module StronglyTypedBound (
   -- This file is a strongly-typed version of the bound library, meaning that
   -- variables are not only guaranteed to be well-scoped, but also well-typed.
   
+  -- |
+  -- Many constructs in this file have the suffix @1@, meaning that the
+  -- construct takes one more type argument than usual.
+  
   Exp(..),
   
   -- * AST manipulations
@@ -71,8 +75,7 @@ module StronglyTypedBound (
   
   -- |
   -- 'Functor1' is a version of 'Functor' with @->@ replaced with ':->:',
-  -- and similarly for the other indexed constructs. The suffix @1@ represents
-  -- the fact that the construct takes one more type argument than usual.
+  -- and similarly for the other indexed constructs.
   
   (:->:),
   Functor1(..)
