@@ -9,6 +9,9 @@
 -- 4. Specialized to support the 'hasUnusedBoundVars' example.
 --    In particular, monadic substitution is omited.
 -- 5. Updated for GHC 7.8.
+-- 
+-- Many constructs in this file have the suffix @1@, meaning that the
+-- construct takes one more type argument than usual.
 
 {-# LANGUAGE GADTs, KindSignatures, InstanceSigs, RankNTypes, ScopedTypeVariables, TypeOperators #-}
 module StronglyTypedBound (
@@ -18,14 +21,10 @@ module StronglyTypedBound (
   -- The <http://hackage.haskell.org/package/bound bound> library is used to
   -- represent languages in a scope-safe way, meaning that terms which attempt
   -- to use unbounded variables are ill-typed.
-  
-  -- |
-  -- This file is a strongly-typed version of the bound library, meaning that
-  -- variables are not only guaranteed to be well-scoped, but also well-typed.
-  
-  -- |
-  -- Many constructs in this file have the suffix @1@, meaning that the
-  -- construct takes one more type argument than usual.
+  -- 
+  -- The following language representation goes further: terms which satisfy
+  -- Haskell's type-checker are guaranteed to be both well-scoped and well-typed
+  -- (according to the rules of the language, not Haskell's).
   
   Exp(..),
   mapContext,
