@@ -23,8 +23,8 @@ module StronglyTypedBound (
   -- to use unbounded variables are ill-typed.
   -- 
   -- The following language representation goes further: terms which satisfy
-  -- Haskell's type-checker are guaranteed to be both well-scoped and well-typed
-  -- (according to the rules of the language, not Haskell's).
+  -- Haskell's type-checker are also guaranteed to be well-typed (according to
+  -- the rules of the language, not Haskell's).
   
   Exp(..),
   mapContext,
