@@ -49,6 +49,14 @@ module StronglyTypedBound (
   HoasExp, runHoasExp,
   var, unit, (<@>), lam,
   
+  -- * Heterogeneous equality
+  
+  -- |
+  -- If two variables are the same, then they also have equal types.
+  -- We need a notion of equality which reflects this.
+  
+  Eq1(..), eqProxy,
+  
   -- * Indexed version of common constructs
   
   -- |
@@ -57,15 +65,7 @@ module StronglyTypedBound (
   -- the fact that the construct takes one more type argument than usual.
   
   (:->:),
-  Functor1(..), Monad1(..), Show1(..),
-  
-  -- * Heterogeneous equality
-  
-  -- |
-  -- If two variables are the same, then they also have equal types.
-  -- We need a notion of equality which reflects this.
-  
-  Eq1(..), eqProxy
+  Functor1(..), Monad1(..), Show1(..)
   ) where
 
 import Control.Applicative (liftA2)
@@ -261,6 +261,32 @@ lam body = do
     return $ Lam (bindVar numericVar e)
 
 
+-- * Heterogeneous equality
+
+-- |
+-- Note that even if 'a' and 'a'' are the same type, '==?' may still
+-- return 'Nothing' if the values are unequal.
+class Eq1 (f :: * -> *) where
+    (==?) :: f a -> f a' -> Maybe (a :~: a')
+
+-- |
+-- Due to the 'Typeable' constraints, this isn't quite the right type
+-- for an @'Eq1' 'Proxy'@ instance.
+eqProxy :: (Typeable a, Typeable a')
+        => Proxy a -> Proxy a' -> Maybe (a :~: a')
+eqProxy _ _ = eqT
+
+instance Eq1 Empty1 where
+    empty1 ==? _ = absurd1 empty1
+
+instance Eq1 g => Eq1 (Comma g a) where
+    Here ==? Here = Just Refl
+    There gy ==? There gy' = case gy ==? gy' of
+        Just Refl -> Just Refl
+        Nothing   -> Nothing
+    _ ==? _ = Nothing
+
+
 -- * Indexed version of common constructs
 
 type (:->:) f g = forall a. f a -> g a
@@ -324,27 +350,3 @@ instance Show1 g => Show (Exp g a) where
     show = show1
 
 
--- * Heterogeneous equality
-
--- |
--- Note that even if 'a' and 'a'' are the same type, '==?' may still
--- return 'Nothing' if the values are unequal.
-class Eq1 (f :: * -> *) where
-    (==?) :: f a -> f a' -> Maybe (a :~: a')
-
--- |
--- Due to the 'Typeable' constraints, this isn't quite the right type
--- for an @'Eq1' 'Proxy'@ instance.
-eqProxy :: (Typeable a, Typeable a')
-        => Proxy a -> Proxy a' -> Maybe (a :~: a')
-eqProxy _ _ = eqT
-
-instance Eq1 Empty1 where
-    empty1 ==? _ = absurd1 empty1
-
-instance Eq1 g => Eq1 (Comma g a) where
-    Here ==? Here = Just Refl
-    There gy ==? There gy' = case gy ==? gy' of
-        Just Refl -> Just Refl
-        Nothing   -> Nothing
-    _ ==? _ = Nothing
