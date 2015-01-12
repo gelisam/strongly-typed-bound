@@ -22,6 +22,12 @@ module StronglyTypedBound (
   Exp(..),
   eval,
   
+  -- * Example manipulation: detecting unused variables
+  
+  Pred1(..),
+  conjunction,
+  hasUnusedBoundVars,
+  
   -- * Finite contexts
   
   -- |
@@ -66,6 +72,7 @@ module StronglyTypedBound (
 
 import Control.Applicative
 import Control.Monad.State
+import Data.Maybe
 import Data.Typeable
 import GHC.Conc.Sync (pseq)
 import Text.Printf
@@ -83,6 +90,9 @@ data Exp (g :: * -> *) a where
     Lam :: Exp (g `Comma` a) b -> Exp g (a -> b)
 
 -- |
+-- An interpreter is equally easy with 'Exp' as with a more typical HOAS
+-- representation...
+-- 
 -- >>> :{
 --   eval $ runHoasExp $ lam (\f -> f <@> unit)
 --                   <@> lam (\x -> x)
@@ -100,6 +110,39 @@ eval = go absurd1
         env' :: forall a1. a1 -> (forall b. Comma g a1 b -> b)
         env' x1 Here       = x1
         env' _  (There gy) = env gy
+
+
+-- * Example manipulation: detecting unused variables
+
+-- |
+-- A predicate, known to be True or False for every variable in a context.
+data Pred1 (g :: * -> *) = Pred1
+  { runPred1 :: forall a. g a -> Bool
+  }
+
+conjunction :: Pred1 g -> Pred1 g -> Pred1 g
+conjunction (Pred1 p1) (Pred1 p2) = Pred1 $ \x -> p1 x || p2 x
+
+-- |
+-- But some operations are much easier using a representation which, like 'Exp',
+-- use concrete representations for variables.
+hasUnusedBoundVars :: Exp Empty1 a -> Bool
+hasUnusedBoundVars = isNothing . go
+  where
+    -- abort once an unused variable is found,
+    -- otherwise return which variables were used so far.
+    go :: forall g a. Eq1 g
+       => Exp g a -> Maybe (Pred1 g)
+    go (Var gx)    = return $ Pred1 gxWasUsed
+      where
+        gxWasUsed :: forall b. g b -> Bool
+        gxWasUsed gy = isJust (gx ==? gy)
+    go Unit        = return $ Pred1 (const False)
+    go (App e1 e2) = liftA2 conjunction (go e1) (go e2)
+    go (Lam e)     = do
+        Pred1 isVarUsed <- go e
+        guard (isVarUsed Here)
+        return $ Pred1 (isVarUsed . There)
 
 
 -- * Finite contexts
