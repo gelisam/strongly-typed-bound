@@ -21,7 +21,7 @@ data Exp a where
 
 The use of [HOAS](http://en.wikipedia.org/wiki/Higher-order_abstract_syntax) combined with phantom types guarantees that the terms will be well-scoped and well-typed. Unfortunately, in this representation the variables are implicit, which makes some manipulations (for example [Let-floating](http://research.microsoft.com/~simonpj/papers/float.ps.gz)) harder than they need to be.
 
-To perform those kinds of manipulations, it is more convenient to represent variables via a concrete type such as integers or De Bruijn indices. In the following representation, `g` has _n_ inhabitants when _n_ are supposed to be in scope. For example, in the body of a lambda, the type `Maybe g` has one more inhabitant than `g` does, so we can refer to the variable bound by the lambda using `Var Nothing`. Inside of a nested lambda, the variable bound by the nested lambda is now `Var Nothing`, while the variable bound by the outer lambda is now named `Var (Just Nothing)`.
+To perform those kinds of manipulations, it is more convenient to represent variables via a concrete type such as integers or De Bruijn indices. In the following representation, `g` has _n_ inhabitants when _n_ variables are supposed to be in scope. For example, in the body of a lambda, the type `Maybe g` has one more inhabitant than `g` does, so we can refer to the variable bound by the lambda using `Var Nothing`. Inside of a nested lambda, the variable bound by the nested lambda is now `Var Nothing`, while the variable bound by the outer lambda is now named `Var (Just Nothing)`.
 
 ```haskell
 data Exp g where
