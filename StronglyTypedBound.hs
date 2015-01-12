@@ -4,11 +4,12 @@
 -- 
 -- 1. with comments
 -- 2. optimized for clarity, not performance
--- 3. updated for GHC 7.8.3
+-- 3. specialized to only work on the simply-typed lambda calculus.
+-- 4. updated for GHC 7.8
 
 {-# LANGUAGE GADTs, KindSignatures, InstanceSigs, RankNTypes, ScopedTypeVariables, TypeOperators #-}
 module StronglyTypedBound (
-  -- * Strongly-typed Lambda Calculus
+  -- * Simply-typed Lambda Calculus
   
   -- |
   -- The <http://hackage.haskell.org/package/bound bound> library is used to
@@ -82,7 +83,7 @@ import GHC.Conc.Sync (pseq)
 import Text.Printf
 
 
--- * Strongly-typed Lambda Calculus
+-- * Simply-typed Lambda Calculus
 
 -- |
 -- Values of type @Exp Γ τ@ represent expressions 'e' such that
