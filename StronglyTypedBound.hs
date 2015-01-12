@@ -24,7 +24,7 @@ module StronglyTypedBound (
   -- * AST manipulations
   
   eval, hasUnusedBoundVars,
-  Pred1(..), conjunction,
+  Subset(..), empty, singleton, union,
   
   -- * Finite contexts
   
@@ -68,7 +68,7 @@ module StronglyTypedBound (
   Eq1(..), eqProxy
   ) where
 
-import Control.Applicative
+import Control.Applicative (liftA2)
 import Control.Monad.State
 import Data.Maybe
 import Data.Typeable
@@ -133,26 +133,29 @@ hasUnusedBoundVars = isNothing . go
     -- abort once an unused variable is found,
     -- otherwise return which variables were used so far.
     go :: forall g a. Eq1 g
-       => Exp g a -> Maybe (Pred1 g)
-    go (Var gx)    = return $ Pred1 gxWasUsed
-      where
-        gxWasUsed :: forall b. g b -> Bool
-        gxWasUsed gy = isJust (gx ==? gy)
-    go Unit        = return $ Pred1 (const False)
-    go (App e1 e2) = liftA2 conjunction (go e1) (go e2)
+       => Exp g a -> Maybe (Subset g)
+    go (Var gx)    = return (singleton gx)
+    go Unit        = return empty
+    go (App e1 e2) = liftA2 union (go e1) (go e2)
     go (Lam e)     = do
-        Pred1 isVarUsed <- go e
+        Subset isVarUsed <- go e
         guard (isVarUsed Here)
-        return $ Pred1 (isVarUsed . There)
+        return $ Subset (isVarUsed . There)
 
 -- |
--- A predicate, known to be True or False for every variable in a context.
-data Pred1 (g :: * -> *) = Pred1
-  { runPred1 :: forall a. g a -> Bool
+-- The subset of the variables for which a predicate is 'True'.
+data Subset (g :: * -> *) = Subset
+  { runSubset :: forall a. g a -> Bool
   }
 
-conjunction :: Pred1 g -> Pred1 g -> Pred1 g
-conjunction (Pred1 p1) (Pred1 p2) = Pred1 $ \x -> p1 x || p2 x
+empty :: Subset g
+empty = Subset (const False)
+
+singleton :: Eq1 g => g a -> Subset g
+singleton gx = Subset $ \gy -> isJust (gx ==? gy)
+
+union :: Subset g -> Subset g -> Subset g
+union (Subset p1) (Subset p2) = Subset $ \x -> p1 x || p2 x
 
 
 -- * Finite contexts
