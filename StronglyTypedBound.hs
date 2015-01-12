@@ -88,22 +88,22 @@ import GHC.Conc.Sync (pseq)
 data Exp (g :: * -> *) a where
     Var :: g a -> Exp g a
     Unit :: Exp g ()
-    App :: Exp g (a -> b) -> Exp g a -> Exp g b
-    Lam :: Exp (g `Comma` a) b -> Exp g (a -> b)
+    App :: Exp g (a' -> a) -> Exp g a' -> Exp g a
+    Lam :: Exp (g `Comma` a') a -> Exp g (a' -> a)
 
 -- |
 -- Change the context by changing all the variables.
-mapContext :: forall g a g'
-            . (forall b. g b -> g' b)
-           -> Exp g a -> Exp g' a
-mapContext s (Var gx)    = Var (s gx)
-mapContext _ Unit        = Unit
-mapContext s (App e1 e2) = App (mapContext s e1) (mapContext s e2)
-mapContext s (Lam e)     = Lam (mapContext s' e)
+mapContext :: forall g h a
+            . (forall b. g b -> h b)
+           -> Exp g a -> Exp h a
+mapContext s (Var gx)   = Var (s gx)
+mapContext _ Unit       = Unit
+mapContext s (App e e') = App (mapContext s e) (mapContext s e')
+mapContext s (Lam e)    = Lam (mapContext s' e)
   where
-    s' :: forall a1 b1. (g `Comma` a1) b1 -> (g' `Comma` a1) b1
+    s' :: forall a' b. (g `Comma` a') b -> (h `Comma` a') b
     s' Here        = Here
-    s' (There gy1) = There (s gy1)
+    s' (There gy) = There (s gy)
 
 
 -- * AST manipulations
@@ -121,13 +121,13 @@ eval :: Exp Empty1 a -> a
 eval = go absurd1
   where
     go :: forall g a. (forall b. g b -> b) -> Exp g a -> a
-    go env (Var gx)    = env gx
-    go _   Unit        = ()
-    go env (App e1 e2) = (go env e1) (go env e2)
-    go env (Lam e)     = \x1 -> go (env' x1) e
+    go env (Var gx)   = env gx
+    go _   Unit       = ()
+    go env (App e e') = (go env e) (go env e')
+    go env (Lam e)    = \x' -> go (env' x') e
       where
-        env' :: forall a1. a1 -> (forall b. Comma g a1 b -> b)
-        env' x1 Here       = x1
+        env' :: forall a'. a' -> (forall b. (g `Comma` a') b -> b)
+        env' x' Here       = x'
         env' _  (There gy) = env gy
 
 -- |
@@ -152,10 +152,10 @@ hasUnusedBoundVars = isNothing . go
     -- otherwise return which variables were used so far.
     go :: forall g a. Eq1 g
        => Exp g a -> Maybe (Subset g)
-    go (Var gx)    = return (singleton gx)
-    go Unit        = return empty
-    go (App e1 e2) = liftA2 union (go e1) (go e2)
-    go (Lam e)     = do
+    go (Var gx)   = return (singleton gx)
+    go Unit       = return empty
+    go (App e e') = liftA2 union (go e) (go e')
+    go (Lam e)    = do
         Subset isVarUsed <- go e
         guard (isVarUsed Here)
         return $ Subset (isVarUsed . There)
@@ -166,7 +166,7 @@ hasUnusedBoundVars = isNothing . go
 -- |
 -- The subset of the variables for which a predicate is 'True'.
 data Subset (g :: * -> *) = Subset
-  { runSubset :: forall a. g a -> Bool
+  { runSubset :: forall b. g b -> Bool
   }
 
 empty :: Subset g
@@ -176,7 +176,7 @@ singleton :: Eq1 g => g a -> Subset g
 singleton gx = Subset $ \gy -> isJust (gx ==? gy)
 
 union :: Subset g -> Subset g -> Subset g
-union (Subset p1) (Subset p2) = Subset $ \x -> p1 x || p2 x
+union (Subset p1) (Subset p2) = Subset $ \y -> p1 y || p2 y
 
 
 -- * Finite contexts
@@ -219,14 +219,15 @@ instance Eq1 NumericVar where
 -- |
 -- @'bindVar' v e@ shadows 'v', replacing its occurences in 'e' with a fresh
 -- bound variable.
-bindVar :: forall g a b. Eq1 g
-        => g a -> Exp g b -> Exp (g `Comma` a) b
+bindVar :: forall g a. Eq1 g
+        => g a
+        -> (forall b. Exp g b -> Exp (g `Comma` a) b)
 bindVar gx = mapContext s
   where
-    s :: g c -> (g `Comma` a) c
-    s gz = case gz ==? gx of
+    s :: forall b. g b -> (g `Comma` a) b
+    s gy = case gx ==? gy of
         Just Refl -> Here
-        Nothing   -> There gz
+        Nothing   -> There gy
 
 
 -- * Locally-unique variable names
@@ -266,14 +267,14 @@ unit = return Unit
 -- |
 -- DSL representation for 'App'.
 infixl 4 <@>
-(<@>) :: HoasExp (a -> b) -> HoasExp a -> HoasExp b
+(<@>) :: HoasExp (a' -> a) -> HoasExp a' -> HoasExp a
 (<@>) = liftA2 App
 
 -- |
 -- DSL representation for 'Lam'. The DSL exists to provide this more convenient
 -- HOAS-style syntax.
-lam :: Typeable a
-    => (HoasExp a -> HoasExp b) -> HoasExp (a -> b)
+lam :: Typeable a'
+    => (HoasExp a' -> HoasExp a) -> HoasExp (a' -> a)
 lam body = do
     n <- get
     modify (+1)
@@ -285,16 +286,16 @@ lam body = do
 -- * Heterogeneous equality
 
 -- |
--- Note that even if 'a' and 'a'' are the same type, '==?' may still
+-- Note that even if 'b' and 'b'' are the same type, '==?' may still
 -- return 'Nothing' if the values are unequal.
 class Eq1 (g :: * -> *) where
-    (==?) :: g a -> g a' -> Maybe (a :~: a')
+    (==?) :: g b -> g b' -> Maybe (b :~: b')
 
 -- |
 -- Due to the 'Typeable' constraints, this isn't quite the right type
 -- for an @'Eq1' 'Proxy'@ instance.
-eqProxy :: (Typeable a, Typeable a')
-        => Proxy a -> Proxy a' -> Maybe (a :~: a')
+eqProxy :: (Typeable b, Typeable b')
+        => Proxy b -> Proxy b' -> Maybe (b :~: b')
 eqProxy _ _ = eqT
 
 instance Eq1 Empty1 where
