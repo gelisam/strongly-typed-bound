@@ -3,7 +3,7 @@ Strongly-typed bound
 
 [Bound](http://hackage.haskell.org/package/bound) is a library for manipulating terms containing variables. Terms written using the library are guaranteed to be well-scoped. I was quite happy to [stumble](http://gelisam.blogspot.ca/2014/10/understanding-strongly-typed-bound-part.html) upon a snippet describing a strongly-typed version, meaning that the terms are also guaranteed to be well-typed.
 
-[Edward Kmett's original 2012 snippet](http://lpaste.net/79582) has it all: type families, data kinds, higher-ranked monad transformers, tasteful uses of `unsafePerformIO` and `unsafeCoerce`, and even a gratuitious use of comonads. At only 255 lines of code, it's a compact way to demonstrate of the purpose of those more advanced Haskell features, but it can also be a bit daunting to read.
+[Edward Kmett's original 2012 snippet](http://lpaste.net/79582) has it all: type families, data kinds, higher-ranked monad transformers, tasteful uses of `unsafePerformIO` and `unsafeCoerce`, and even a gratuitious use of comonads. At only 255 lines of code, it's a compact way to demonstrate the purpose of those more advanced Haskell features, but it can also be a bit daunting to read.
 
 To make the ideas of strongly-typed bound easier to digest, I have written a version which is less general, uses fewer tricks, and has more comments.
 
