@@ -24,6 +24,12 @@ module StronglyTypedBound (
   -- * AST manipulations
   
   eval, hasUnusedBoundVars,
+  
+  -- * Sets of variables
+  
+  -- |
+  -- Used by 'hasUnusedBoundVars' to track which variables have been used.
+  
   Subset(..), empty, singleton, union,
   
   -- * Finite contexts
@@ -141,6 +147,9 @@ hasUnusedBoundVars = isNothing . go
         Subset isVarUsed <- go e
         guard (isVarUsed Here)
         return $ Subset (isVarUsed . There)
+
+
+-- * Sets of variables
 
 -- |
 -- The subset of the variables for which a predicate is 'True'.
