@@ -2,10 +2,13 @@
 -- A reimplementation of Edward Kmett's
 -- <http://lpaste.net/79582 strongly-typed bound>, except:
 -- 
--- 1. with comments
--- 2. optimized for clarity, not performance
--- 3. specialized to only work on the simply-typed lambda calculus.
--- 4. updated for GHC 7.8
+-- 1. With comments.
+-- 2. Optimized for clarity, not performance.
+-- 3. Specialized to only work on 'Exp', the simply-typed lambda calculus.
+--    In particular, simultaneous binding of multiple variables is omited.
+-- 4. Specialized to support the 'hasUnusedBoundVars' example.
+--    In particular, monadic substitution is omited.
+-- 5. Updated for GHC 7.8.
 
 {-# LANGUAGE GADTs, KindSignatures, InstanceSigs, RankNTypes, ScopedTypeVariables, TypeOperators #-}
 module StronglyTypedBound (
