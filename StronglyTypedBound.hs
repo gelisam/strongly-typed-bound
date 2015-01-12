@@ -20,13 +20,11 @@ module StronglyTypedBound (
   -- variables are not only guaranteed to be well-scoped, but also well-typed.
   
   Exp(..),
-  eval,
   
-  -- * Example manipulation: detecting unused variables
+  -- * AST manipulations
   
-  Pred1(..),
-  conjunction,
-  hasUnusedBoundVars,
+  eval, hasUnusedBoundVars,
+  Pred1(..), conjunction,
   
   -- * Finite contexts
   
@@ -89,6 +87,9 @@ data Exp (g :: * -> *) a where
     App :: Exp g (a -> b) -> Exp g a -> Exp g b
     Lam :: Exp (g `Comma` a) b -> Exp g (a -> b)
 
+
+-- * AST manipulations
+
 -- |
 -- An interpreter is equally easy with 'Exp' as with a more typical HOAS
 -- representation...
@@ -111,20 +112,8 @@ eval = go absurd1
         env' x1 Here       = x1
         env' _  (There gy) = env gy
 
-
--- * Example manipulation: detecting unused variables
-
 -- |
--- A predicate, known to be True or False for every variable in a context.
-data Pred1 (g :: * -> *) = Pred1
-  { runPred1 :: forall a. g a -> Bool
-  }
-
-conjunction :: Pred1 g -> Pred1 g -> Pred1 g
-conjunction (Pred1 p1) (Pred1 p2) = Pred1 $ \x -> p1 x || p2 x
-
--- |
--- But some operations are much easier using a representation which, like 'Exp',
+-- ...but some operations are much easier using a representation which, like 'Exp',
 -- use concrete representations for variables.
 hasUnusedBoundVars :: Exp Empty1 a -> Bool
 hasUnusedBoundVars = isNothing . go
@@ -143,6 +132,15 @@ hasUnusedBoundVars = isNothing . go
         Pred1 isVarUsed <- go e
         guard (isVarUsed Here)
         return $ Pred1 (isVarUsed . There)
+
+-- |
+-- A predicate, known to be True or False for every variable in a context.
+data Pred1 (g :: * -> *) = Pred1
+  { runPred1 :: forall a. g a -> Bool
+  }
+
+conjunction :: Pred1 g -> Pred1 g -> Pred1 g
+conjunction (Pred1 p1) (Pred1 p2) = Pred1 $ \x -> p1 x || p2 x
 
 
 -- * Finite contexts
